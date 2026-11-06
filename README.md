@@ -200,7 +200,7 @@ When a new version of [`pulse-backend.gs`](pulse-backend.gs) comes out:
 
 Your Web app URL stays the same, so nothing changes in Slate.
 
-Don't use **Deploy → New deployment** for updates: that makes a **new URL**, and then you'd have to sign in with the new URL on every device (tap **Use my own server** where the old one is remembered).
+Don't use **Deploy → New deployment** for updates: that makes a **new URL**, and sign-in would keep looking for the old one until whoever runs the site clears your name from the lookup list.
 
 ---
 
@@ -240,7 +240,7 @@ Run **setup** again and copy the key from the log, with no spaces before or afte
 Someone already made that username on your script (probably you). Pick another or sign in.
 
 **"Wrong username or password" on a new device**
-You're probably signing in to a different server than yours. Click **Use my own server** (if the URL field is hidden) and paste your Web app URL.
+Check the spelling of both. There's no password reset. If your script's URL changed, whoever runs the site has to clear your name from the lookup list.
 
 **"Too many attempts. Wait 10 minutes and try again."**
 After 5 wrong passwords, sign-in pauses for 10 minutes.
