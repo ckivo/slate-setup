@@ -32,7 +32,7 @@ Three things you'll create along the way:
 |---|---|---|
 | **Web app URL** | Your script's address. Starts with `https://script.google.com/` and ends in `/exec`. Slate sends your data here. | Fine to keep on your devices; don't post it publicly. |
 | **Dashboard key** | A long secret code the script makes the first time it runs. You need it once, to create your account. | **Yes.** Anyone with it and your URL can read your data through the script. |
-| **Username and password** | What you sign in with on every device. | **Yes.** There is no password reset. Use a password manager. |
+| **Username and password** | All you need to sign in, on any device. | **Yes.** There is no password reset. Use a password manager. |
 
 ---
 
@@ -108,14 +108,11 @@ Don't use the **Test deployments** URL (the one ending in `/dev`). It only works
    - **Dashboard key:** paste it from Step 4.
 4. Click **Create account**. You land on Home, empty and ready.
 
-Slate now remembers your URL on this device, so next time you only type your username and password.
+Slate then asks you to make a 4-digit PIN. It also unlocks Finance.
 
-**Signing in on another device or browser.** A new device doesn't know your URL yet, so the sign-in screen shows the **Your Apps Script URL** field there. The first time on each new device or browser:
+**Signing in on any other device.** Just your username and password, then your PIN. Your username and script link sit in a small lookup list in the script of whoever runs the site, which is how a new device finds your script. That list never holds your password or your data, and because of it usernames are first come, first served across everyone on the site. Anyone who guesses your username could see your script link, but they still need your password to get in.
 
-1. Paste your Web app URL into **Your Apps Script URL**.
-2. Type your username and password and click **Sign in**.
-
-After that, that device remembers your server. Don't tap **Use the usual server**: that's the server built into the site, which belongs to whoever runs it, not you. If you sign in there by mistake you'll get "Wrong username or password". Your password itself isn't sent, but the login proof made from it is (see [Your data and privacy](#your-data-and-privacy)), so change your password if you think you signed in to the wrong server.
+**Forgot your PIN?** Tap **Forgot your PIN?** after signing in and paste your dashboard key. Your password alone can't reset it.
 
 **Just want to look first?** **Look around first** on the sign-in screen opens Slate with made-up sample data on that device only. Nothing goes to any server. Use **Log out** in Settings to leave. Sample data never carries into a real account.
 

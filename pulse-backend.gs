@@ -356,6 +356,9 @@ function accountApi_(b) {
   if (api === 'ping') return { ok: true, accounts: true };
   if (api === 'signup') return signup_(b);
   if (api === 'signin') return signin_(b);
+  if (api === 'whereIs') return whereIs_(b);
+  if (api === 'claimName') return claimName_(b);
+  if (api === 'checkKey') return checkKey_(b);
 
   const user = sessionUser_(b.token);
   if (!user) return { ok: false, error: 'Your session ended — please sign in again.', signedOut: true };
@@ -372,6 +375,34 @@ function accountApi_(b) {
     case 'alerts': return collect_(Math.min(90, Math.max(1, parseInt(b.days, 10) || DEFAULT_DAYS)));
     default: return { ok: false, error: 'Unknown request.' };
   }
+}
+
+/* The lookup list: on the script a Slate site is built with, username -> that person's script link, so a new device can
+   sign in with just a username and password. No passwords or data. A name stays with whoever claimed it first. */
+const SCRIPT_URL_RE_ = /^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\/s\/[\w-]+\/exec$/;
+
+function whereIs_(b) {
+  const name = String(b.username || '').trim().toLowerCase();
+  if (readAccounts_().users[name]) return { ok: true, server: 'self' };
+  return { ok: true, server: PropertiesService.getScriptProperties().getProperty('dir:' + name) };
+}
+
+function claimName_(b) {
+  const name = String(b.username || '').trim().toLowerCase();
+  const server = String(b.server || '').trim();
+  if (!USER_RE_.test(name) || !SCRIPT_URL_RE_.test(server)) return { ok: false, error: 'Bad request.' };
+  const props = PropertiesService.getScriptProperties();
+  const held = props.getProperty('dir:' + name);
+  if (readAccounts_().users[name] || (held && held !== server)) return { ok: false, error: 'That username is taken.' };
+  props.setProperty('dir:' + name, server);
+  return { ok: true };
+}
+
+// Proves the owner of this script is at the keyboard, to reset a forgotten PIN.
+function checkKey_(b) {
+  const owner = getKey_(false);
+  if (!owner || String(b.dashboardKey || '').trim() !== owner) return { ok: false, error: 'That dashboard key isn’t right. It’s printed in the script log when you run setup().' };
+  return { ok: true };
 }
 
 function signup_(b) {
