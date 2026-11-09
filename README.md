@@ -2,7 +2,9 @@
 
 Slate is a private daily desk for trading Nasdaq-100 futures (MNQ and NQ). It keeps your trades, journals, money and health in one place and syncs between your computer and your phone.
 
-Slate has no shared server. Your account and your data live in **your own Google account**, through a small script you install yourself (a "Google Apps Script"). Nobody else's Drive is involved, including the person who gave you the Slate link.
+Slate has no shared server. Your account and your data live in **your own Google account**, through a small script you install yourself (a "Google Apps Script"). Nobody else's Drive is involved, including whoever runs the Slate site.
+
+**Slate is at [slates-eight.vercel.app](https://slates-eight.vercel.app/).** Bookmark it: it's the one link for everyone, on every device.
 
 This guide takes about 15 minutes. You need a computer for the setup; after that you can use Slate on your phone too.
 
@@ -23,7 +25,7 @@ This guide takes about 15 minutes. You need a computer for the setup; after that
 ## What you need
 
 - **A Google account.** Your data is stored in its Google Drive. If you want Bank of America alerts in Finance (optional), use the Gmail account that receives those alerts.
-- **The Slate link you were given.** That's the website you'll use every day.
+- **Slate itself: [slates-eight.vercel.app](https://slates-eight.vercel.app/).** That's the website you'll use every day.
 - **This repo's script file:** [`pulse-backend.gs`](pulse-backend.gs). You'll copy all of it in Part 1. (It's called "pulse" because Slate used to be called Pulse. The name doesn't matter.)
 
 Three things you'll create along the way:
@@ -99,7 +101,7 @@ Don't use the **Test deployments** URL (the one ending in `/dev`). It only works
 
 ## Part 2: Create your Slate account
 
-1. Open **the Slate link you were given**, on your computer.
+1. Open **[slates-eight.vercel.app](https://slates-eight.vercel.app/)** on your computer.
 2. Under the **Sign in** button, click **New here? Create an account**.
 3. Fill in:
    - **Your Apps Script URL:** paste the Web app URL from Step 5 (ends in `/exec`). This is required, and Slate will only create your account on this URL.
@@ -122,15 +124,15 @@ Slate then asks you to make a 4-digit PIN. It also unlocks Finance.
 
 **iPhone (Safari)**
 
-1. Open the Slate link in **Safari**.
+1. Open [slates-eight.vercel.app](https://slates-eight.vercel.app/) in **Safari**.
 2. Tap the **Share** button (the square with an arrow), then **Add to Home Screen**, then **Add**.
-3. Open Slate **from the new icon** and sign in there: your Web app URL, username and password.
+3. Open Slate **from the new icon** and sign in there with your username and password, then your PIN.
 
 The home-screen app keeps its own storage, separate from Safari, so sign in from the icon even if you already signed in in Safari.
 
 **Android (Chrome)**
 
-1. Open the Slate link in Chrome.
+1. Open [slates-eight.vercel.app](https://slates-eight.vercel.app/) in Chrome.
 2. Tap the **⋮** menu, then **Add to Home screen** (or **Install app**).
 3. Open it from the icon and sign in the same way.
 
@@ -213,7 +215,7 @@ What's true, plainly:
 - **Your password.** Slate never sends your password itself. On your device it turns your password into a "login proof" (PBKDF2, 310,000 rounds); only that proof goes to **your own** Apps Script, which stores a salted hash of it in `pulse-accounts.json`. A second key made from your password, which never leaves your device, encrypts your API keys.
 - **Your API keys** are encrypted on your device before they're uploaded, so your script stores only scrambled text. When you use them, your browser talks to Anthropic or USDA directly.
 - **The dashboard key is a master key.** With your Web app URL and dashboard key, someone could create accounts on your script and read your data through it. Keep it private. If it leaks, see [Troubleshooting](#troubleshooting).
-- **The person who gave you the link** can't see your data: your browser sends it only to your Web app URL. You are trusting the code the Slate site serves, the same way you trust any website. If you want full control, you can host your own copy of the site.
+- **Whoever runs the site** can't see your data: your browser sends it only to your Web app URL. You are trusting the code the Slate site serves, the same way you trust any website. If you want full control, you can host your own copy of the site.
 - **No password reset.** Your password is the only key to your encrypted API keys. If you forget it, see [Troubleshooting](#troubleshooting).
 - **Google's limits apply.** Apps Script has daily quotas. Normal personal use is far below them.
 
@@ -275,15 +277,16 @@ Delete the `pulse-*.json` files and `Pulse photos` folders from your Drive, and 
 - **Phone:** a floating bar at the bottom: Home, Journals, Health and Finance, then the round **Recap** button. To Do opens from Home.
 - **Computer:** the same bar stands up as a rail on the left edge, with labels and all five pages (To Do included), plus Recap.
 - **Settings** is the gear at the top right. **Log out** is at the bottom of Settings.
+- **Your routine:** the round button at the bottom right of every page opens one card where you edit your habits, repeating to-dos and the built-in trading steps (their times, or switch one off). Changes save as you type.
 - **Title menus:** on Journals, Health and Finance, the page title is a button with a small ▾. It lists the sections (for example Health: Today, Meals, Workouts, Meal plan, Macros), each with a live line from your data. On a computer a section slides out as a panel from the right; on a phone it opens as a sheet. Close it with ×, Escape or by clicking outside.
 - **Command bar:** press **Ctrl+K** (**Cmd+K** on Mac) or **/** to jump to a page, log a trade, turn privacy on or off, and more.
 - Groups of things sit in **split cards**: one glass card cut into pieces, one piece per item.
 
 ### A trading day
 
-1. **Before the open: the game plan.** On Home, open **Game plan**: pick Long, Neutral or Short, note your key levels and news, write today's one rule, and **Lock in plan**. If you log a trade without a locked plan, Home says "Traded without a locked plan."
+1. **Before the open: the game plan.** On Home on your computer, open **Game plan**: pick Long, Neutral or Short, note your key levels and news, write today's one rule, and **Lock in plan**. If you log a trade without a locked plan, Home says "Traded without a locked plan."
 2. **After each trade: log it.** The editor is one compact screen: contract and side, contracts, entry and exit (P&L fills itself in: MNQ $2 a point per contract, NQ $20), setup and grade, then rows for account, tags and feelings, notes and photos. **Save trade**.
-3. **Watch the meter.** Home shows today's P&L against your daily loss limit and how much room is left. Switch the range with **Day / Week / Month / Year**; the **Edge** row (expectancy, profit factor, average win and loss) follows the range.
+3. **Watch the meter.** On a computer, Home shows today's P&L against your daily loss limit and how much room is left, with its line underneath (hover it for each trade's time and P&L). Switch the range with **Day / Week / Month / Year**; the **Edge** row (expectancy, profit factor, average win and loss) follows the range.
 4. **Protect the green.** Once today's P&L has peaked at **$600 or more**, a second line appears: "Protect the green". Its floor is half your peak, and the room left becomes the smaller of your loss-limit room and the room above that floor. If you give back half your peak, Home says so and offers "I'm done". This is a nudge only; it doesn't lock anything.
 5. **The loss lock.** When today's logged P&L reaches your daily limit, a full-screen **"Done for today."** appears. Start your review, and a small reminder stays for the rest of the day. You can still journal. Slate only knows what you log, and it **can't** close positions or block orders at your broker.
 6. **After the session: journal.** Log mistakes in **Mental** with the fix for next time, and write the **Daily review** (rating, what went well, what to improve, tomorrow's focus). Tick off To Do.
@@ -291,12 +294,13 @@ Delete the `pulse-*.json` files and `Pulse photos` folders from your Drive, and 
 ### Recap and Tomo
 
 - The **Recap** button makes a plain-text file of your day or week (game plan, trades with notes and photo names, mental entries, review, To Do and habits), with the photos. **Share** sends it (on phones that support it); **Save** downloads it. Your name from Settings goes at the top.
-- **Tomo** pills, next to the game plan, on each journal entry and on "Send today to Tomo", open the same card with just that piece, ready to send to your coach.
+- **Send to Tomo** is the round paper-plane button: next to the game plan, on each journal card and entry, and **Send today to Tomo** on Journals. The plane flies to the middle of the screen and the same card opens with just that piece, ready to send to your coach.
 
 ### The pages
 
-- **Home:** P&L and the loss meter, protect the green, the Edge row, and one split card with Game plan, To Do, Journals and Health. On a computer, today's mistakes sit beside the P&L.
-- **Journals:** the month's P&L, your costliest mistakes, then Trading / Mental / Daily entries. The title menu has Overview, Calendar, Gallery and Setups.
+- **Home on your phone:** four rings (To Do, Habits, Food, Journals) and your day as a timeline with a "now" line. Tap a ring to show only its items; earlier items fold into one row. It's for tracking the day, so there's no game plan to write there.
+- **Home on a computer:** P&L and the loss meter, protect the green, the Edge row, and one split card with Game plan, Checklist, To Do, Journals and Health. Today's mistakes sit beside the P&L.
+- **Journals:** the month's P&L, then one card each for Trading, Mental and Daily, with its recent entries, its own **Log** and a paper plane. Your costliest mistakes sit underneath. The title menu has Overview, Calendar, Gallery and Setups.
 - **To Do:** the day, the week, habits with streaks, and reminders. On market days the trading routine adds itself.
 - **Health:** calories and macros, today's meals on a timeline, "What fits in what's left", workouts, AI meal plans (Anthropic key) and the shopping list.
 - **Finance:** net worth, where your money lives, spending this calendar month, bills for the next 7 days, transactions (manual, CSV or Bank alerts), investments and trading accounts. You type trading accounts in yourself; Slate doesn't connect to your broker.
