@@ -359,6 +359,8 @@ function accountApi_(b) {
   if (api === 'whereIs') return whereIs_(b);
   if (api === 'claimName') return claimName_(b);
   if (api === 'checkKey') return checkKey_(b);
+  // Optional add-on file (coach mode). Scripts without it answer these like any unknown request.
+  if (api.indexOf('coach') === 0 && typeof coachApi_ === 'function') return coachApi_(b);
 
   const user = sessionUser_(b.token);
   if (!user) return { ok: false, error: 'Your session ended — please sign in again.', signedOut: true };
