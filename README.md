@@ -152,34 +152,16 @@ Open **Settings** with the gear (top right).
 
 **Slate can't stop trades at your broker.** It shows a "Done for today" screen when your logged P&L reaches your limit. For a real hard stop, set the limit at your broker too (on Tradesea: Settings → Personal Daily Loss Limit → "Liquidate and Block").
 
-### API keys
-
-Settings → **API keys**. Keys are encrypted on your device with a key made from your password, then saved to your account, so every device gets them.
-
-**Anthropic (AI meal plans on the Health page)**
-
-1. Go to [console.anthropic.com](https://console.anthropic.com) and sign up or sign in.
-2. Add a little credit under **Billing**. Each plan costs a few cents, billed to you by Anthropic.
-3. Open **API Keys**, create a key and copy it (starts with `sk-ant-`).
-4. In Slate, paste it into **Anthropic (meal plans)**, click **Test Anthropic key**, then **Save keys**.
-
-**USDA FoodData Central (food search when logging meals, free)**
-
-1. Request a free key at [fdc.nal.usda.gov/api-key-signup](https://fdc.nal.usda.gov/api-key-signup). It arrives by email.
-2. Paste it into **USDA FoodData Central (food search)** and click **Save keys**.
-
-Without your own USDA key, Slate uses a shared demo key that runs out quickly.
-
 ### Bank of America alerts in Finance
 
 This only works if your script runs in the Gmail account that receives your Bank of America alert emails (directly or forwarded).
 
 1. In the Bank of America app: **Menu → Alerts**. Turn on email alerts for debit and credit card purchases (set the threshold to $0.01 so every purchase alerts), deposits and Zelle.
-2. In Slate: **Finance**, open **Transactions**, then tap **Bank alerts**. Slate pulls the last 45 days and adds only new purchases.
+2. That's it. Slate checks your alerts by itself each time you open it (at most every 6 hours) and keeps only what Finance tracks: trading costs and payouts (Topstep, Apex, TradingView and the like) and subscription and bill charges. Groceries, gas and the rest are skipped. A subscription it doesn't know yet shows as a **New subscription found** card at the top of Finance: **Add** it, or tap **×** if it isn't one. **Bank alerts** at the bottom of Finance checks right away.
 
 If an alert isn't picked up: in your Apps Script choose **debugLatest** in the function dropdown, click **Run**, and read the log. It shows the three latest Bank of America emails and how they were read.
 
-You can also bring in transactions with **Import CSV** (any bank CSV with Date and Amount columns).
+You can also bring in charges with **Import CSV** (any bank CSV with Date and Amount columns).
 
 ### Finance PIN and Face ID
 
@@ -212,8 +194,7 @@ What's true, plainly:
 
 - **Where your data lives.** In your Google Drive: one `pulse-sync-<username>.json` file with your journals, trades, money, health and lists, and a `Pulse photos (<username>)` folder with your journal photos. A copy is also kept in each browser you use, so Slate works offline and syncs when it can.
 - **Your data in Drive is not encrypted.** It's a normal file in your Google account, protected like the rest of your Drive. Anyone who can get into your Google account can read it.
-- **Your password.** Slate never sends your password itself. On your device it turns your password into a "login proof" (PBKDF2, 310,000 rounds); only that proof goes to **your own** Apps Script, which stores a salted hash of it in `pulse-accounts.json`. A second key made from your password, which never leaves your device, encrypts your API keys.
-- **Your API keys** are encrypted on your device before they're uploaded, so your script stores only scrambled text. When you use them, your browser talks to Anthropic or USDA directly.
+- **Your password.** Slate never sends your password itself. On your device it turns your password into a "login proof" (PBKDF2, 310,000 rounds); only that proof goes to **your own** Apps Script, which stores a salted hash of it in `pulse-accounts.json`.
 - **The dashboard key is a master key.** With your Web app URL and dashboard key, someone could create accounts on your script and read your data through it. Keep it private. If it leaks, see [Troubleshooting](#troubleshooting).
 - **Whoever runs the site** can't see your data: your browser sends it only to your Web app URL. You are trusting the code the Slate site serves, the same way you trust any website. If you want full control, you can host your own copy of the site.
 - **No password reset.** Your password is the only key to your encrypted API keys. If you forget it, see [Troubleshooting](#troubleshooting).
@@ -253,12 +234,6 @@ Sessions last 30 days, and changing your password signs out your other devices. 
 **Changes don't show on my other device**
 Check you're signed in with the same username on the same server on both. Open Settings → **Server and sync** and click **Sync now** on the device that has the change, then reopen Slate on the other one.
 
-**"Anthropic said 401" or meal plans fail**
-Check the key with **Test Anthropic key** and your credit balance at console.anthropic.com.
-
-**Food search stops working**
-The shared USDA demo key ran out. Add your own free USDA key (Part 4).
-
 **My dashboard key leaked**
 In your Apps Script choose **resetKey** and click **Run**. The log prints a new key. Existing accounts keep working; the old key stops working.
 
@@ -274,12 +249,12 @@ Delete the `pulse-*.json` files and `Pulse photos` folders from your Drive, and 
 
 ### Getting around
 
-- **Phone:** a floating bar at the bottom: Home, Journals, Health and Finance, then the round **Recap** button. To Do opens from Home.
+- **Phone:** a floating bar at the bottom: Home, Journals, Training and Finance, then the round **Recap** button. To Do opens from Home.
 - **Computer:** the same bar stands up as a rail on the left edge, with labels and all five pages (To Do included), plus Recap.
-- **Settings** is the gear at the top right. **Theme** there switches Dark, Light, Auto (follows your device) or Mono (black, white and greys; gains and losses keep their green and red). **Log out** is at the bottom of Settings.
+- **Settings** is the gear at the top right. **Theme** there switches Dark (graphite with one sky blue accent and soft contour lines), Light, Auto (follows your device) or Mono (black, white and greys). **Sounds** turns the interface sounds on or off: a soft glass tick on presses, a warm pluck when you save, a brighter chime for big wins like a finished checklist, and a short confetti burst for those (none under Reduce motion). **Log out** is at the bottom of Settings.
 - **Your routine:** the round button at the bottom right of every page opens one card where you edit your habits, repeating to-dos and the built-in trading steps (their times, or switch one off). Changes save as you type.
 - **Your trading rules:** on Journals, open the Trading calendar and click the **Rules** tab on its right edge (or pick **Rules** from the Journals title menu). Write your own rules in groups you name. Slate's own rules sit on top: change their numbers, or delete any you don't want (the loss limit stays; **Restore** brings deleted ones back). The **Rules** button on Home shows them all at a glance, and **Settings → Rules on every page** shows them on every page: **Corner** (one at a time) or **Ticker** (sliding along the bottom).
-- **Title menus:** on Journals, Health and Finance, the page title is a button with a small ▾. It lists the sections (for example Health: Today, Meals, Workouts, Meal plan, Macros), each with a live line from your data. On a computer a section slides out as a panel from the right; on a phone it opens as a sheet. Close it with ×, Escape or by clicking outside.
+- **Title menus:** on Journals, Training and Finance, the page title is a button with a small ▾. It lists the sections (for example Finance: Trading, Subscriptions), each with a live line from your data. On a computer a section slides out as a panel from the right; on a phone it opens as a sheet. Close it with ×, Escape or by clicking outside.
 - **Command bar:** press **Ctrl+K** (**Cmd+K** on Mac) or **/** to jump to a page, log a trade, turn privacy on or off, and more.
 - Groups of things sit in **split cards**: one glass card cut into pieces, one piece per item.
 
@@ -299,12 +274,13 @@ Delete the `pulse-*.json` files and `Pulse photos` folders from your Drive, and 
 
 ### The pages
 
-- **Home on your phone:** four rings (To Do, Habits, Food, Journals) and your day as a timeline with a "now" line. Tap a ring to show only its items; earlier items fold into one row. It's for tracking the day, so there's no game plan to write there.
-- **Home on a computer:** P&L and the loss meter, protect the green, the Edge row, and one split card with Game plan, Checklist, To Do, Journals and Health. Today's mistakes sit beside the P&L.
+- **Home on your phone:** this week as day chips (tap one to open that day), today's P&L and the room left on your loss limit, then four rings (To Do, Habits, Training, Journals) and your day as a timeline with a "now" line. Tap a ring to show only its items; earlier items fold into one row.
+- **Home on a computer:** the P&L with the loss limit as a row of lights that fill as you use the room (amber near the end), cards for today, the week, the month and your win rate, the running P&L as a glowing line with one sentence about it, protect the green and the Edge row. Under today's trades: the week as day chips, the month as glowing tiles, and **When you make money**, a grid of weekdays by hour that shows your best hour and what the afternoon costs. One split card on the right holds Game plan, Checklist, To Do, Journals and Training. Today's mistakes sit beside the P&L.
 - **Journals:** the month's P&L, then one card each for Trading, Mental and Daily, with its recent entries, its own **Log** and a paper plane. Your costliest mistakes sit underneath. The title menu has Overview, Calendar, Gallery and Setups.
 - **Backtesting:** on Journals, open the Calendar, pick **Trading**, then switch **Live / Backtest** to **Backtest**. **+ Log** starts a session: the day you backtested (today unless you change it), the market, then a calendar of past market days. Days you already backtested on that market in other sessions have a dot. Tap a day to add the trades you took (long or short, setup, win, loss or break-even in R, time, note), or mark it backtested with no trade. Backtest stats (win rate, expectancy in R, best setup) stay separate from your real trading.
+- **Hindsight:** the third option on that switch, for Sundays. It lists last week's market days; tap **Add** on a day for each setup you could have taken: the setup, the time, why you didn't take it (hesitated, wasn't watching, didn't trust it, rule said no) and a chart screenshot. On Sundays Home shows **Hindsight for last week** until you've added one. Its numbers (setups missed, the one you miss most, your most common reason) never mix with your real P&L.
 - **To Do:** the day, the week, habits with streaks, and reminders. On market days the trading routine adds itself.
-- **Health:** calories and macros, today's meals on a timeline, "What fits in what's left", workouts, AI meal plans (Anthropic key) and the shopping list. Missed tracking a workout? **Log past workout** (under Workouts → Workout history, or Live workout) takes the date, the program day, your sets and how long it took, and ticks your Gym habit for that day. Tracked workouts with a coach or an AI chat? **Import from Assistant** (next to it) reads the text you paste, using your Anthropic key, and shows every workout it found for you to tick before they're added.
-- **Finance:** net worth, where your money lives, spending this calendar month, bills for the next 7 days, transactions (manual, CSV or Bank alerts), investments and trading accounts. You type trading accounts in yourself; Slate doesn't connect to your broker.
+- **Training:** how many workouts you've done this week, the week as days you can tap, and that day's workout: what you did (top set per lift) or what your program has planned, with last time's numbers to beat. **Import from Tomo** (top right) takes the workout text Tomo sends you each night: paste it, check the list, and it's added and your Gym habit ticks for that day. Slate reads it with plain rules, no AI and nothing to pay for. Each workout starts with its day or date and a colon (`thursday, upper day:`), and each exercise is sets x reps @ weight in lb (`lat pulldown 3x8 @ 100`; kg is converted). **Start** opens the live logger, **Planner** has your program, goals, measurements and photos, and **History** has every workout and your lift progress. Missed one? **Log past workout** is under History.
+- **Finance:** two things only. **Trading:** this month's payouts and trading costs, with the net at the top, and your trading accounts (typed in by you; Slate doesn't connect to your broker). **Subscriptions and bills:** everything recurring, biggest first, with what it costs a month and a year, so the ones to cut stand out. Both fill in from your bank alerts by themselves.
 
 Deleting something shows **Undo** for a few seconds.
