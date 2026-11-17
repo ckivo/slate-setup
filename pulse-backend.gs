@@ -72,6 +72,23 @@ function resetKey() {
   Logger.log('New DASHBOARD KEY:\n' + getKey_(true));
 }
 
+/* SHARED DRIVE (one Google account for you and friends)
+   Run `setInviteCode` once: the log prints an invite code. Friends create their Slate account with just a username,
+   password and that code, and their data lives in this account's Drive (you can open it; tell them). Run it again for
+   a new code (the old one stops working). Run `closeSignups` to stop new accounts; everyone already here keeps
+   signing in as normal. */
+function setInviteCode() {
+  const words = ['maple', 'cedar', 'harbor', 'lantern', 'summit', 'meadow', 'canyon', 'falcon', 'willow', 'ember', 'river', 'atlas'];
+  const code = words[Math.floor(Math.random() * words.length)] + '-' + String(1000 + Math.floor(Math.random() * 9000));
+  PropertiesService.getScriptProperties().setProperty('INVITE_CODE', code);
+  Logger.log('INVITE CODE (give this to friends for "Create an account"):\n' + code);
+}
+
+function closeSignups() {
+  PropertiesService.getScriptProperties().deleteProperty('INVITE_CODE');
+  Logger.log('Invite sign-ups are closed. Accounts already here keep working.');
+}
+
 // Prints the 3 most recent Bank of America emails so the parser can be tuned to your exact format.
 function debugLatest() {
   const threads = GmailApp.search(SEARCH + ' newer_than:30d', 0, 10);
@@ -409,8 +426,22 @@ function checkKey_(b) {
 
 function signup_(b) {
   const owner = getKey_(false);
-  if (!owner) return { ok: false, error: 'Run setup() in the script first.' };
-  if (String(b.dashboardKey || '').trim() !== owner) return { ok: false, error: 'That dashboard key isn’t right. It’s printed in the script log when you run setup().' };
+  const invite = PropertiesService.getScriptProperties().getProperty('INVITE_CODE');
+  if (b.invite !== undefined) {
+    // Shared Drive sign-up: the invite code from setInviteCode stands in for the dashboard key. Wrong guesses are
+    // limited like sign-in so the code can't be guessed by brute force.
+    if (!invite) return { ok: false, error: 'Sign-ups on this Slate are closed. Ask whoever runs it for a new invite.' };
+    const cache = CacheService.getScriptCache();
+    const tries = parseInt(cache.get('invite_fails') || '0', 10);
+    if (tries >= 20) return { ok: false, error: 'Too many wrong invite codes. Wait 10 minutes and try again.' };
+    if (String(b.invite).trim().toLowerCase() !== invite.toLowerCase()) {
+      cache.put('invite_fails', String(tries + 1), 600);
+      return { ok: false, error: 'That invite code isn’t right.' };
+    }
+  } else {
+    if (!owner) return { ok: false, error: 'Run setup() in the script first.' };
+    if (String(b.dashboardKey || '').trim() !== owner) return { ok: false, error: 'That dashboard key isn’t right. It’s printed in the script log when you run setup().' };
+  }
   const name = String(b.username || '').trim().toLowerCase();
   if (!USER_RE_.test(name)) return { ok: false, error: 'Usernames are 3–32 characters: letters, numbers, dot, dash or underscore.' };
   if (!/^[a-f0-9]{64}$/.test(String(b.auth || ''))) return { ok: false, error: 'Bad sign-up request.' };
