@@ -4,7 +4,7 @@ Slate is a private daily desk for trading Nasdaq-100 futures (MNQ and NQ). It ke
 
 Slate has no shared server. Your account and your data live in **your own Google account**, through a small script you install yourself (a "Google Apps Script"). Nobody else's Drive is involved, including whoever runs the Slate site.
 
-**Slate is at [slates-eight.vercel.app](https://slates-eight.vercel.app/).** Bookmark it: it's the one link for everyone, on every device.
+**Slate is at [slates.site](https://slates.site/).** Bookmark it: it's the one link for everyone, on every device.
 
 This guide takes about 15 minutes. You need a computer for the setup; after that you can use Slate on your phone too.
 
@@ -25,7 +25,7 @@ This guide takes about 15 minutes. You need a computer for the setup; after that
 ## What you need
 
 - **A Google account.** Your data is stored in its Google Drive. If you want Bank of America alerts in Finance (optional), use the Gmail account that receives those alerts.
-- **Slate itself: [slates-eight.vercel.app](https://slates-eight.vercel.app/).** That's the website you'll use every day.
+- **Slate itself: [slates.site](https://slates.site/).** That's the website you'll use every day.
 - **This repo's script file:** [`pulse-backend.gs`](pulse-backend.gs). You'll copy all of it in Part 1. (It's called "pulse" because Slate used to be called Pulse. The name doesn't matter.)
 
 Three things you'll create along the way:
@@ -101,7 +101,7 @@ Don't use the **Test deployments** URL (the one ending in `/dev`). It only works
 
 ## Part 2: Create your Slate account
 
-1. Open **[slates-eight.vercel.app](https://slates-eight.vercel.app/)** on your computer.
+1. Open **[slates.site](https://slates.site/)** on your computer.
 2. Under the **Sign in** button, click **New here? Create an account**.
 3. Fill in:
    - **Your Apps Script URL:** paste the Web app URL from Step 5 (ends in `/exec`). This is required, and Slate will only create your account on this URL.
@@ -124,7 +124,7 @@ Slate then asks you to make a 4-digit PIN. It also unlocks Finance.
 
 **iPhone (Safari)**
 
-1. Open [slates-eight.vercel.app](https://slates-eight.vercel.app/) in **Safari**.
+1. Open [slates.site](https://slates.site/) in **Safari**.
 2. Tap the **Share** button (the square with an arrow), then **Add to Home Screen**, then **Add**.
 3. Open Slate **from the new icon** and sign in there with your username and password, then your PIN.
 
@@ -132,7 +132,7 @@ The home-screen app keeps its own storage, separate from Safari, so sign in from
 
 **Android (Chrome)**
 
-1. Open [slates-eight.vercel.app](https://slates-eight.vercel.app/) in Chrome.
+1. Open [slates.site](https://slates.site/) in Chrome.
 2. Tap the **⋮** menu, then **Add to Home screen** (or **Install app**).
 3. Open it from the icon and sign in the same way.
 
