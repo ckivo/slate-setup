@@ -171,6 +171,16 @@ Settings → **Password and PIN** → **Set PIN**. A 4-digit PIN locks the Finan
 
 Settings → **Privacy mode**, or **Hide amounts** on Finance. Every dollar amount turns into `$****` and green and red turn grey. Good for screen sharing. It's per device.
 
+### Friends
+
+The **friends button** (two people, next to the gear) lists your friends and requests. **Add Friend** at the bottom sends a request to an exact username; they accept or decline it in their own friends button.
+
+Once you're friends, either of you can tap **View each other's journals**. When the other person accepts, you both can open each other's journals (read only) by tapping their name. Use **⋯** next to a friend to stop sharing or remove them.
+
+- **Your P&L stays hidden** unless you turn on Settings → **Friends can see my P&L**. With it off, your P&L and any amount written with a `$` are taken out on your device before anything is sent. Entry and exit prices, size and screenshots still show.
+- **Where shared journals live.** A copy of what you share sits in the Google Drive of the script the site is built with (the shared one), so whoever owns that Google account can open it.
+- **Needs the newest script.** Friends work once that shared script runs the current [`pulse-backend.gs`](pulse-backend.gs). If your account is on your own script, update yours too (Part 5): until you do, friends won't work for your account. After updating the shared script, run **setup** once: it asks for one new permission, to check accounts that live on other scripts.
+
 ---
 
 ## Part 5: Updating the script later

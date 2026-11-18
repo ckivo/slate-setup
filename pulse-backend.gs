@@ -376,6 +376,8 @@ function accountApi_(b) {
   if (api === 'whereIs') return whereIs_(b);
   if (api === 'claimName') return claimName_(b);
   if (api === 'checkKey') return checkKey_(b);
+  if (api === 'shareImage') return shareImage_(b);
+  if (FRIENDS_APIS_.indexOf(api) >= 0) return friendsApi_(api, b);
   // Optional add-on file (coach mode). Scripts without it answer these like any unknown request.
   if (api.indexOf('coach') === 0 && typeof coachApi_ === 'function') return coachApi_(b);
 
@@ -392,6 +394,8 @@ function accountApi_(b) {
     case 'getImage': return getImage_(b.id, userPhotoFolder_(user));
     case 'deleteImage': return deleteImage_(b.id, userPhotoFolder_(user));
     case 'alerts': return collect_(Math.min(90, Math.max(1, parseInt(b.days, 10) || DEFAULT_DAYS)));
+    case 'whoami': return { ok: true, user: user };
+    case 'sharePass': return sharePass_(user, b);
     default: return { ok: false, error: 'Unknown request.' };
   }
 }
@@ -580,4 +584,255 @@ function userPhotoFolder_(user) {
 function sha256Hex_(s) {
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, s, Utilities.Charset.UTF_8)
     .map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
+}
+
+/* ---------------- Friends ----------------
+   On the script a Slate site is built with (the shared one), "pulse-friends.json" holds who is friends with whom and
+   the open requests: { friends: { "a|b": { since, share: null | "asked:<name>" | "on" } }, requests: [{ from, to, kind,
+   at }] }. Each person who shares their journals has one "copy-<name>.json" in the "Slate friends" folder: a copy their
+   own device made (money already taken out there) plus the pass that opens their screenshots. People whose account is
+   on another script are checked by asking that script who the token belongs to (whoami), and only if the lookup list
+   sends their username to that script. Every script also answers whoami, sharePass and shareImage for its own users. */
+
+const FRIENDS_APIS_ = ['friends', 'friendRequest', 'friendAnswer', 'friendRemove', 'shareRequest', 'shareStop', 'shareUpload', 'shareView'];
+const SHARE_PASS_RE_ = /^[a-f0-9]{32}$/;
+const pairKey_ = (a, b) => [a, b].sort().join('|');
+const userName_ = s => String(s || '').trim().toLowerCase();
+
+// Who is calling: { user, server } (server null for accounts on this script), or null.
+function caller_(b) {
+  const token = String(b.token || '');
+  if (!b.server) {
+    const user = sessionUser_(token);
+    return user ? { user: user, server: null } : null;
+  }
+  const user = userName_(b.user), server = String(b.server).trim();
+  if (!USER_RE_.test(user) || !SCRIPT_URL_RE_.test(server) || token.length < 32) return null;
+  // An account here is checked here, never through another script (its saved script address may just be out of date).
+  if (readAccounts_().users[user]) return sessionUser_(token) === user ? { user: user, server: null } : null;
+  if (PropertiesService.getScriptProperties().getProperty('dir:' + user) !== server) return null;
+  const cache = CacheService.getScriptCache(), key = 'who:' + sha256Hex_(token + '|' + server);
+  if (cache.get(key) === user) return { user: user, server: server };
+  let res;
+  try {
+    res = JSON.parse(UrlFetchApp.fetch(server, { method: 'post', contentType: 'text/plain', payload: JSON.stringify({ api: 'whoami', token: token }), followRedirects: true, muteHttpExceptions: true }).getContentText());
+  } catch (err) {
+    return null;
+  }
+  if (!res || !res.ok || res.user !== user) return null;
+  cache.put(key, user, 600);
+  return { user: user, server: server };
+}
+
+function friendsFile_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('FRIENDS_FILE_ID');
+  if (id) {
+    try { return DriveApp.getFileById(id); } catch (err) { /* deleted — make a new one */ }
+  }
+  const file = DriveApp.createFile('pulse-friends.json', JSON.stringify({ friends: {}, requests: [] }), 'application/json');
+  props.setProperty('FRIENDS_FILE_ID', file.getId());
+  return file;
+}
+
+function readFriends_() {
+  try {
+    const doc = JSON.parse(friendsFile_().getBlob().getDataAsString());
+    return { friends: doc.friends || {}, requests: doc.requests || [] };
+  } catch (err) {
+    return { friends: {}, requests: [] };
+  }
+}
+
+function withFriends_(fn) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const doc = readFriends_();
+    const before = JSON.stringify(doc);
+    const result = fn(doc);
+    const after = JSON.stringify(doc);
+    if (after !== before) friendsFile_().setContent(after);
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function friendsFolder_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('FRIENDS_FOLDER_ID');
+  if (id) {
+    try { return DriveApp.getFolderById(id); } catch (err) { /* deleted — make a new one */ }
+  }
+  const folder = DriveApp.createFolder('Slate friends');
+  props.setProperty('FRIENDS_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+// The friends rules, on the parsed file. `exists(name)` says whether a username is a Slate user. Mutates `doc`.
+function friendsApply_(doc, me, act, exists) {
+  const name = userName_(act.name);
+  if (!USER_RE_.test(name)) return { ok: false, error: 'Usernames are 3–32 characters: letters, numbers, dot, dash or underscore.' };
+  if (name === me) return { ok: false, error: 'That’s you.' };
+  const key = pairKey_(me, name), pair = doc.friends[key];
+  const has = (from, to, kind) => doc.requests.some(r => r.from === from && r.to === to && r.kind === kind);
+  const drop = (from, to, kind) => { doc.requests = doc.requests.filter(r => !(r.from === from && r.to === to && (!kind || r.kind === kind))); };
+  const now = Date.now();
+  switch (act.op) {
+    case 'request':
+      if (pair) return { ok: false, error: 'You’re already friends.' };
+      if (has(me, name, 'friend')) return { ok: false, error: 'Already sent.' };
+      if (!exists(name)) return { ok: false, error: 'No Slate user called ' + name + '.' };
+      if (has(name, me, 'friend')) {
+        drop(name, me, 'friend');
+        doc.friends[key] = { since: now, share: null };
+        return { ok: true, friends: true };
+      }
+      doc.requests.push({ from: me, to: name, kind: 'friend', at: now });
+      return { ok: true };
+    case 'answer': {
+      const kind = act.kind === 'share' ? 'share' : 'friend';
+      if (!has(name, me, kind)) return { ok: false, error: 'That request isn’t there anymore.' };
+      drop(name, me, kind);
+      if (kind === 'friend') {
+        if (act.accept) doc.friends[key] = { since: now, share: null };
+      } else if (pair) {
+        pair.share = act.accept ? 'on' : null;
+      }
+      return { ok: true };
+    }
+    case 'remove':
+      if (!pair && !has(me, name, 'friend')) return { ok: false, error: 'You’re not friends with ' + name + '.' };
+      delete doc.friends[key];
+      drop(me, name);
+      drop(name, me);
+      return { ok: true };
+    case 'shareRequest':
+      if (!pair) return { ok: false, error: 'Add them as a friend first.' };
+      if (pair.share === 'on') return { ok: false, error: 'You already share journals.' };
+      if (has(name, me, 'share')) {
+        drop(name, me, 'share');
+        pair.share = 'on';
+        return { ok: true, sharing: true };
+      }
+      if (has(me, name, 'share')) return { ok: false, error: 'Already sent.' };
+      pair.share = 'asked:' + me;
+      doc.requests.push({ from: me, to: name, kind: 'share', at: now });
+      return { ok: true };
+    case 'shareStop':
+      if (!pair) return { ok: false, error: 'You’re not friends with ' + name + '.' };
+      pair.share = null;
+      drop(me, name, 'share');
+      drop(name, me, 'share');
+      return { ok: true };
+  }
+  return { ok: false, error: 'Unknown request.' };
+}
+
+const sharesWithAnyone_ = (doc, me) => Object.keys(doc.friends).some(k => k.split('|').indexOf(me) >= 0 && doc.friends[k].share === 'on');
+
+// Bin a copy nobody may read anymore.
+function dropCopy_(doc, name) {
+  if (sharesWithAnyone_(doc, name)) return;
+  const files = friendsFolder_().getFilesByName('copy-' + name + '.json');
+  while (files.hasNext()) files.next().setTrashed(true);
+  PropertiesService.getScriptProperties().deleteProperty('copyAt:' + name);
+}
+
+function friendsList_(doc, me) {
+  const props = PropertiesService.getScriptProperties();
+  const friends = Object.keys(doc.friends).filter(k => k.split('|').indexOf(me) >= 0).map(k => {
+    const parts = k.split('|'), name = parts[0] === me ? parts[1] : parts[0], p = doc.friends[k];
+    const row = { name: name, share: p.share === 'on' ? 'on' : p.share === 'asked:' + me ? 'asked-by-me' : p.share ? 'asked-by-them' : 'none' };
+    const at = p.share === 'on' ? props.getProperty('copyAt:' + name) : null;
+    if (at) row.copyAt = Number(at);
+    return row;
+  }).sort((a, b) => a.name < b.name ? -1 : 1);
+  return {
+    friends: friends,
+    requests: doc.requests.filter(r => r.to === me).map(r => ({ from: r.from, kind: r.kind, at: r.at })),
+    sent: doc.requests.filter(r => r.from === me).map(r => ({ to: r.to, kind: r.kind, at: r.at })),
+  };
+}
+
+function friendsApi_(api, b) {
+  const me = caller_(b);
+  if (!me) return { ok: false, error: 'Couldn’t confirm your account for friends. If it lives on your own Google script, update that script to the newest Slate version (setup guide, Part 5). Otherwise sign out and back in.' };
+  const props = PropertiesService.getScriptProperties();
+  const exists = n => !!readAccounts_().users[n] || !!props.getProperty('dir:' + n);
+  const act = op => withFriends_(doc => {
+    const res = friendsApply_(doc, me.user, op, exists);
+    if (res.ok && (op.op === 'remove' || op.op === 'shareStop')) { dropCopy_(doc, me.user); dropCopy_(doc, userName_(op.name)); }
+    return res;
+  });
+  switch (api) {
+    case 'friends': return Object.assign({ ok: true, me: me.user }, friendsList_(readFriends_(), me.user));
+    case 'friendRequest': return act({ op: 'request', name: b.to });
+    case 'friendAnswer': return act({ op: 'answer', name: b.from, kind: b.kind, accept: !!b.accept });
+    case 'friendRemove': return act({ op: 'remove', name: b.name });
+    case 'shareRequest': return act({ op: 'shareRequest', name: b.to });
+    case 'shareStop': return act({ op: 'shareStop', name: b.name });
+    case 'shareUpload': return shareUpload_(me, b);
+    case 'shareView': return shareView_(me, b);
+  }
+  return { ok: false, error: 'Unknown request.' };
+}
+
+// Saved outside the lock: each person writes only their own copy, so a big upload never holds up anyone's sync.
+function shareUpload_(me, b) {
+  const data = String(b.data || ''), pass = String(b.pass || '');
+  if (!SHARE_PASS_RE_.test(pass) || !data) return { ok: false, error: 'Bad request.' };
+  if (!sharesWithAnyone_(readFriends_(), me.user)) return { ok: true, skipped: true };
+  const at = Date.now();
+  const body = JSON.stringify({ at: at, money: !!b.money, server: me.server, pass: pass, data: data });
+  const folder = friendsFolder_(), name = 'copy-' + me.user + '.json', files = folder.getFilesByName(name);
+  let kept = null;
+  while (files.hasNext()) {
+    const f = files.next();
+    if (kept) f.setTrashed(true); // two first uploads at once can leave two files: keep one
+    else (kept = f).setContent(body);
+  }
+  if (!kept) folder.createFile(name, body, 'application/json');
+  // Sharing may have stopped while this was saving: then nobody may read it, so bin it.
+  const after = readFriends_();
+  if (!sharesWithAnyone_(after, me.user)) {
+    dropCopy_(after, me.user);
+    return { ok: true, skipped: true };
+  }
+  PropertiesService.getScriptProperties().setProperty('copyAt:' + me.user, String(at));
+  return { ok: true, at: at };
+}
+
+function shareView_(me, b) {
+  const name = userName_(b.name), pair = readFriends_().friends[pairKey_(me.user, name)];
+  if (!pair || pair.share !== 'on') return { ok: false, error: 'Not shared with you.' };
+  const files = friendsFolder_().getFilesByName('copy-' + name + '.json');
+  if (!files.hasNext()) return { ok: true, empty: true };
+  const c = JSON.parse(files.next().getBlob().getDataAsString());
+  return { ok: true, at: c.at, money: !!c.money, server: c.server || null, pass: c.pass, data: c.data };
+}
+
+// The pass that opens your shared screenshots, and which ones. Kept in a file (script properties cap at 9 KB).
+function sharePass_(user, b) {
+  const pass = String(b.pass || '');
+  const images = Array.isArray(b.images) ? b.images.filter(validPhotoId_) : [];
+  if (!SHARE_PASS_RE_.test(pass)) return { ok: false, error: 'Bad request.' };
+  const folder = userPhotoFolder_(user), body = JSON.stringify({ pass: pass, images: images });
+  const files = folder.getFilesByName('share-pass.json');
+  if (files.hasNext()) files.next().setContent(body);
+  else folder.createFile('share-pass.json', body, 'application/json');
+  return { ok: true };
+}
+
+function shareImage_(b) {
+  const user = userName_(b.user), id = String(b.id || ''), pass = String(b.pass || '');
+  const no = { ok: false, error: 'Not shared.' };
+  if (!readAccounts_().users[user] || !validPhotoId_(id) || !SHARE_PASS_RE_.test(pass)) return no;
+  const folder = userPhotoFolder_(user), files = folder.getFilesByName('share-pass.json');
+  if (!files.hasNext()) return no;
+  let saved;
+  try { saved = JSON.parse(files.next().getBlob().getDataAsString()); } catch (err) { return no; }
+  if (saved.pass !== pass || (saved.images || []).indexOf(id) < 0) return no;
+  return getImage_(id, folder);
 }
